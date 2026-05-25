@@ -1,5 +1,5 @@
 import {
-  PermissionFlagsBits,
+  ChannelType,
   SlashCommandBuilder
 } from "discord.js";
 import {
@@ -9,6 +9,8 @@ import {
 import { addWarning, clearWarnings, getWarnings } from "./warnings.js";
 
 const maxWarningsBeforeKick = 3;
+const departmentAdminRoleName = process.env.MODMAIL_STAFF_ROLE_NAME ?? "Department Administration";
+const trainingRoleName = "Inspector";
 const academyUrl = "https://www.roblox.com/games/75822607146189/Vancouver-Police-Academy";
 const trainingTemplates = {
   basic: {
@@ -86,6 +88,38 @@ async function replyEphemeral(interaction, content) {
   await interaction.reply({ content, ephemeral: true });
 }
 
+async function requireDepartmentAdmin(interaction) {
+  const hasRole = hasAnyRole(interaction, [departmentAdminRoleName]);
+
+  if (!hasRole) {
+    await replyEphemeral(
+      interaction,
+      `You need the ${departmentAdminRoleName} role to use this command.`
+    );
+    return false;
+  }
+
+  return true;
+}
+
+function hasAnyRole(interaction, roleNames) {
+  return interaction.member?.roles?.cache?.some((role) => roleNames.includes(role.name));
+}
+
+async function requireTrainingAccess(interaction) {
+  const hasRole = hasAnyRole(interaction, [departmentAdminRoleName, trainingRoleName]);
+
+  if (!hasRole) {
+    await replyEphemeral(
+      interaction,
+      `You need the ${departmentAdminRoleName} or ${trainingRoleName} role to use this command.`
+    );
+    return false;
+  }
+
+  return true;
+}
+
 async function sendDm(user, message) {
   try {
     await user.send(message);
@@ -102,14 +136,22 @@ async function sendModLog(interaction, message) {
     return false;
   }
 
-  const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
+  const channel = await interaction.client.channels.fetch(channelId).catch((error) => {
+    console.error("Could not fetch mod log channel:", error);
+    return null;
+  });
 
   if (!channel?.isTextBased()) {
     return false;
   }
 
-  await channel.send(message);
-  return true;
+  try {
+    await channel.send(message);
+    return true;
+  } catch (error) {
+    console.error("Could not send mod log message:", error);
+    return false;
+  }
 }
 
 async function getTextChannel(client, channelId) {
@@ -140,6 +182,10 @@ export const commands = [
       .setName("ping")
       .setDescription("Check whether the bot is awake."),
     async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
       await interaction.reply("Pong!");
     }
   },
@@ -147,7 +193,6 @@ export const commands = [
     data: new SlashCommandBuilder()
       .setName("ban")
       .setDescription("Ban a member from the server.")
-      .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
       .addUserOption((option) =>
         option
           .setName("user")
@@ -169,6 +214,10 @@ export const commands = [
           .setMaxValue(7)
       ),
     async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
       const user = interaction.options.getUser("user", true);
       const member = await interaction.guild.members.fetch(user.id).catch(() => null);
       const reason = interaction.options.getString("reason", true);
@@ -215,7 +264,6 @@ export const commands = [
     data: new SlashCommandBuilder()
       .setName("kick")
       .setDescription("Kick a member from the server.")
-      .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers)
       .addUserOption((option) =>
         option
           .setName("user")
@@ -230,6 +278,10 @@ export const commands = [
           .setMaxLength(512)
       ),
     async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
       const member = interaction.options.getMember("user");
       const reason = interaction.options.getString("reason", true);
 
@@ -274,7 +326,6 @@ export const commands = [
     data: new SlashCommandBuilder()
       .setName("warn")
       .setDescription("Warn a member and save it locally.")
-      .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
       .addUserOption((option) =>
         option
           .setName("user")
@@ -289,6 +340,10 @@ export const commands = [
           .setMaxLength(512)
       ),
     async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
       const user = interaction.options.getUser("user", true);
       const member = await interaction.guild.members.fetch(user.id).catch(() => null);
       const reason = interaction.options.getString("reason", true);
@@ -348,7 +403,6 @@ export const commands = [
     data: new SlashCommandBuilder()
       .setName("warnings")
       .setDescription("View saved warnings for a member.")
-      .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
       .addUserOption((option) =>
         option
           .setName("user")
@@ -356,6 +410,10 @@ export const commands = [
           .setRequired(true)
       ),
     async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
       const user = interaction.options.getUser("user", true);
       const warnings = await getWarnings(interaction.guildId, user.id);
 
@@ -379,7 +437,6 @@ export const commands = [
     data: new SlashCommandBuilder()
       .setName("clearwarnings")
       .setDescription("Clear all saved warnings for a member.")
-      .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
       .addUserOption((option) =>
         option
           .setName("user")
@@ -393,6 +450,10 @@ export const commands = [
           .setMaxLength(512)
       ),
     async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
       const user = interaction.options.getUser("user", true);
       const reason = interaction.options.getString("reason") ?? "No reason provided.";
       const clearedCount = await clearWarnings(interaction.guildId, user.id);
@@ -409,7 +470,6 @@ export const commands = [
     data: new SlashCommandBuilder()
       .setName("closemodmail")
       .setDescription("Close the current modmail thread.")
-      .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
       .addStringOption((option) =>
         option
           .setName("reason")
@@ -418,6 +478,10 @@ export const commands = [
           .setMaxLength(512)
       ),
     async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
       const reason = interaction.options.getString("reason", true);
       const result = await closeModmailThread(interaction, reason);
 
@@ -430,7 +494,6 @@ export const commands = [
     data: new SlashCommandBuilder()
       .setName("reply")
       .setDescription("Reply to the user in the current modmail thread.")
-      .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
       .addStringOption((option) =>
         option
           .setName("message")
@@ -439,6 +502,10 @@ export const commands = [
           .setMaxLength(2000)
       ),
     async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
       const message = interaction.options.getString("message", true);
       const result = await replyToModmailThread(interaction, message);
 
@@ -451,7 +518,6 @@ export const commands = [
     data: new SlashCommandBuilder()
       .setName("say")
       .setDescription("Make the bot send a message.")
-      .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
       .addStringOption((option) =>
         option
           .setName("message")
@@ -463,8 +529,13 @@ export const commands = [
         option
           .setName("channel")
           .setDescription("Where to send the message. Defaults to this channel.")
+          .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
       ),
     async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
       const message = interaction.options.getString("message", true);
       const channel = interaction.options.getChannel("channel") ?? interaction.channel;
 
@@ -473,7 +544,17 @@ export const commands = [
         return;
       }
 
-      await channel.send(message);
+      try {
+        await channel.send(message);
+      } catch (error) {
+        console.error("Could not send /say message:", error);
+        await replyEphemeral(
+          interaction,
+          "I could not send a message in that channel. Check my channel permissions."
+        );
+        return;
+      }
+
       await sendModLog(
         interaction,
         `Say: ${interaction.user.tag} made me send a message in ${channel}. Message: ${message}`
@@ -485,7 +566,6 @@ export const commands = [
     data: new SlashCommandBuilder()
       .setName("training")
       .setDescription("Post a training announcement.")
-      .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
       .addStringOption((option) =>
         option
           .setName("type")
@@ -497,6 +577,10 @@ export const commands = [
           )
       ),
     async execute(interaction) {
+      if (!(await requireTrainingAccess(interaction))) {
+        return;
+      }
+
       const trainingType = interaction.options.getString("type", true);
       const template = trainingTemplates[trainingType];
       const channel = await getTextChannel(
@@ -528,4 +612,6 @@ export const commands = [
       await replyEphemeral(interaction, `${template.name} announcement sent.`);
     }
   }
+];
+
 ];
