@@ -76,6 +76,13 @@ async function sendModmailLog(client, message) {
   return true;
 }
 
+function getAttachmentFiles(attachments) {
+  return attachments.map((attachment) => ({
+    attachment: attachment.url,
+    name: attachment.name ?? undefined
+  }));
+}
+
 export async function handleModmailDm(message) {
   const guild = await getGuild(message.client);
 
@@ -152,10 +159,15 @@ export async function handleModmailDm(message) {
     );
   }
 
-  await channel.send(`From ${message.author.tag}: ${message.content}`);
+  const files = getAttachmentFiles(message.attachments);
+  const content = message.content.trim()
+    ? `From ${message.author.tag}: ${message.content}`
+    : `From ${message.author.tag}:`;
+
+  await channel.send({ content, files });
 }
 
-export async function replyToModmailThread(interaction, replyMessage) {
+export async function replyToModmailThread(interaction, replyMessage, attachment) {
   const modmail = await readModmail();
   const thread = modmail.threads[interaction.channelId];
 
@@ -169,7 +181,20 @@ export async function replyToModmailThread(interaction, replyMessage) {
     return { sent: false, message: "I could not find the user for this modmail thread." };
   }
 
-  await user.send(`Staff: ${replyMessage}`);
+  const payload = {
+    content: `Staff: ${replyMessage}`
+  };
+
+  if (attachment) {
+    payload.files = [
+      {
+        attachment: attachment.url,
+        name: attachment.name ?? undefined
+      }
+    ];
+  }
+
+  await user.send(payload);
   await interaction.reply(`Reply sent to <@${thread.userId}>.`);
   return { sent: true };
 }
@@ -207,4 +232,3 @@ export async function closeModmailThread(interaction, reason) {
 
   return { closed: true };
 }
-
