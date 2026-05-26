@@ -4,6 +4,7 @@ import {
 } from "discord.js";
 import {
   closeModmailThread,
+  reopenModmailThread,
   replyToModmailThread
 } from "./modmail.js";
 import { addWarning, clearWarnings, getWarnings } from "./warnings.js";
@@ -500,6 +501,11 @@ export const commands = [
           .setDescription("The message to send to the user.")
           .setRequired(true)
           .setMaxLength(2000)
+      )
+      .addAttachmentOption((option) =>
+        option
+          .setName("attachment")
+          .setDescription("Optional image or file to send to the user.")
       ),
     async execute(interaction) {
       if (!(await requireDepartmentAdmin(interaction))) {
@@ -507,11 +513,31 @@ export const commands = [
       }
 
       const message = interaction.options.getString("message", true);
-      const result = await replyToModmailThread(interaction, message);
+      const attachment = interaction.options.getAttachment("attachment");
+      const result = await replyToModmailThread(interaction, message, attachment);
 
       if (!result.sent) {
         await replyEphemeral(interaction, result.message);
       }
+    }
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("reopenmodmail")
+      .setDescription("Reconnect this channel to a modmail user.")
+      .addUserOption((option) =>
+        option
+          .setName("user")
+          .setDescription("The user this modmail channel belongs to.")
+          .setRequired(true)
+      ),
+    async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
+      const user = interaction.options.getUser("user", true);
+      await reopenModmailThread(interaction, user);
     }
   },
   {
@@ -613,4 +639,3 @@ export const commands = [
     }
   }
 ];
-
