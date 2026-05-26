@@ -85,7 +85,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
-  if (message.author.bot || !message.content.trim()) {
+  const hasText = message.content.trim().length > 0;
+  const hasAttachments = message.attachments.size > 0;
+
+  if (message.author.bot || (!hasText && !hasAttachments)) {
     return;
   }
 
@@ -101,3 +104,4 @@ if (!process.env.DISCORD_TOKEN) {
 
 await registerSlashCommands();
 await client.login(process.env.DISCORD_TOKEN);
+
