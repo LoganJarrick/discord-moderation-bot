@@ -143,7 +143,7 @@ export async function handleModmailDm(message) {
     await writeModmail(modmail);
 
     await channel.send(
-      `${staffRole}\nNew modmail thread from ${message.author.tag} (${message.author.id}). Use /reply to DM the user. Use /closemodmail to close it.`
+      `New modmail thread from ${message.author.tag} (${message.author.id}). Use /reply to DM the user. Use /closemodmail to close it.`
     );
     await message.author.send("Thanks, your message was sent to staff. They will reply as soon as they can.");
     await sendModmailLog(
@@ -207,3 +207,4 @@ export async function closeModmailThread(interaction, reason) {
 
   return { closed: true };
 }
+
