@@ -83,6 +83,43 @@ function getAttachmentFiles(attachments) {
   }));
 }
 
+async function recoverModmailThread(interaction, modmail) {
+  const existingThread = modmail.threads[interaction.channelId];
+
+  if (existingThread?.status === "open") {
+    return existingThread;
+  }
+
+  const topicMatch = interaction.channel?.topic?.match(/modmail-user:(\d+)/);
+  let userId = topicMatch?.[1];
+
+  if (!userId && interaction.channel?.messages) {
+    const messages = await interaction.channel.messages.fetch({ limit: 25 }).catch(() => null);
+    const openingMessage = messages?.find((message) =>
+      message.author.id === interaction.client.user.id &&
+      message.content.includes("New modmail thread from")
+    );
+    userId = openingMessage?.content.match(/\((\d{17,20})\)/)?.[1];
+  }
+
+  if (!userId) {
+    return null;
+  }
+
+  const thread = {
+    userId,
+    channelId: interaction.channelId,
+    status: "open",
+    createdAt: new Date().toISOString(),
+    recoveredAt: new Date().toISOString()
+  };
+
+  modmail.threads[interaction.channelId] = thread;
+  await writeModmail(modmail);
+
+  return thread;
+}
+
 export async function handleModmailDm(message) {
   const guild = await getGuild(message.client);
 
@@ -113,6 +150,7 @@ export async function handleModmailDm(message) {
     channel = await guild.channels.create({
       name: `modmail-${cleanChannelName(message.author.username) || message.author.id}`,
       type: ChannelType.GuildText,
+      topic: `modmail-user:${message.author.id}`,
       parent: process.env.MODMAIL_CATEGORY_ID || undefined,
       permissionOverwrites: [
         {
@@ -169,7 +207,7 @@ export async function handleModmailDm(message) {
 
 export async function replyToModmailThread(interaction, replyMessage, attachment) {
   const modmail = await readModmail();
-  const thread = modmail.threads[interaction.channelId];
+  const thread = await recoverModmailThread(interaction, modmail);
 
   if (!thread || thread.status !== "open") {
     return { sent: false, message: "This is not an open modmail channel." };
@@ -201,7 +239,7 @@ export async function replyToModmailThread(interaction, replyMessage, attachment
 
 export async function closeModmailThread(interaction, reason) {
   const modmail = await readModmail();
-  const thread = modmail.threads[interaction.channelId];
+  const thread = await recoverModmailThread(interaction, modmail);
 
   if (!thread || thread.status !== "open") {
     return { closed: false, message: "This is not an open modmail channel." };
