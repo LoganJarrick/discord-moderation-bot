@@ -94,7 +94,7 @@ async function recoverModmailThread(interaction, modmail) {
   let userId = topicMatch?.[1];
 
   if (!userId && interaction.channel?.messages) {
-    const messages = await interaction.channel.messages.fetch({ limit: 25 }).catch(() => null);
+    const messages = await interaction.channel.messages.fetch({ limit: 100 }).catch(() => null);
     const openingMessage = messages?.find((message) =>
       message.author.id === interaction.client.user.id &&
       message.content.includes("New modmail thread from")
@@ -237,6 +237,34 @@ export async function replyToModmailThread(interaction, replyMessage, attachment
   return { sent: true };
 }
 
+export async function reopenModmailThread(interaction, user) {
+  const modmail = await readModmail();
+  const thread = {
+    userId: user.id,
+    channelId: interaction.channelId,
+    status: "open",
+    createdAt: new Date().toISOString(),
+    reopenedAt: new Date().toISOString(),
+    reopenedBy: interaction.user.id
+  };
+
+  modmail.threads[interaction.channelId] = thread;
+  await writeModmail(modmail);
+
+  if (interaction.channel?.setTopic) {
+    await interaction.channel
+      .setTopic(`modmail-user:${user.id}`, `Modmail reopened by ${interaction.user.tag}`)
+      .catch(() => {});
+  }
+
+  await sendModmailLog(
+    interaction.client,
+    `Modmail reopened by ${interaction.user.tag} for ${user.tag} (${user.id}) in ${interaction.channel}.`
+  );
+
+  await interaction.reply(`This channel is now reopened as a modmail thread for ${user}.`);
+}
+
 export async function closeModmailThread(interaction, reason) {
   const modmail = await readModmail();
   const thread = await recoverModmailThread(interaction, modmail);
@@ -270,3 +298,6 @@ export async function closeModmailThread(interaction, reason) {
 
   return { closed: true };
 }
+
+
+           
