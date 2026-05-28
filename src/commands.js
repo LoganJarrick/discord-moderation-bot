@@ -14,15 +14,20 @@ const departmentAdminRoleName = process.env.MODMAIL_STAFF_ROLE_NAME ?? "Departme
 const trainingRoleName = "Inspector";
 const academyUrl = "https://www.roblox.com/games/75822607146189/Vancouver-Police-Academy";
 const trainingTemplates = {
-  basic: {
-    name: "Basic Training",
-    roleNames: [
-      "Trainee",
-      "Special Municipal Constable",
-      "Constable 2nd Class",
-      "Department Administration"
-    ],
-    body: "A Basic training is being hosted. Go to the locker room and grab your uniform then STS on the red line and wait for further instructions. Permission to Speak is activated."
+  smc: {
+    name: "SMC Training",
+    roleNames: ["Trainee"],
+    body: "A SMC Training is being hosted. Go to the locker room and grab your uniform then STS on the red line and wait for further instructions. Permission to Speak is activated."
+  },
+  constable_second_class: {
+    name: "Constable Second Class Training",
+    roleNames: ["Special Municipal Constable"],
+    body: "A Constable Second Class Training is being hosted. Go to the locker room and grab your uniform then STS on the red line and wait for further instructions. Permission to Speak is activated."
+  },
+  constable_first_class: {
+    name: "Constable First Class Training",
+    roleNames: ["Constable 2nd Class"],
+    body: "A Constable First Class Training is being hosted. Go to the locker room and grab your uniform then STS on the red line and wait for further instructions. Permission to Speak is activated."
   },
   sergeant: {
     name: "Sergeant Training",
@@ -747,7 +752,9 @@ export const commands = [
           .setDescription("The training announcement to post.")
           .setRequired(true)
           .addChoices(
-            { name: "Basic Training", value: "basic" },
+            { name: "SMC Training", value: "smc" },
+            { name: "Constable Second Class Training", value: "constable_second_class" },
+            { name: "Constable First Class Training", value: "constable_first_class" },
             { name: "Sergeant Training", value: "sergeant" }
           )
       ),
