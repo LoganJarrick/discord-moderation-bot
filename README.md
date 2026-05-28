@@ -4,12 +4,16 @@ Small moderation bot using `discord.js`. It includes these slash commands:
 
 - `/ping`
 - `/ban`
+- `/unban`
 - `/kick`
+- `/purge`
+- `/bans`
 - `/warn`
 - `/warnings`
 - `/clearwarnings`
 - `/closemodmail`
 - `/reply`
+- `/reopenmodmail`
 - `/say`
 - `/training`
 
@@ -37,9 +41,7 @@ npm install
 
 ## Register Slash Commands
 
-```bash
-npm run register
-```
+Slash commands register automatically when the bot starts.
 
 ## Run The Bot
 
@@ -76,18 +78,25 @@ Make sure the bot's role is above the roles it needs to moderate.
 
 ## Moderation Behavior
 
+- All slash commands require the `Department Administration` role, using `MODMAIL_STAFF_ROLE_NAME`.
+- `/training` can also be used by members with the `Inspector` role.
 - `/warn` says `<username> has been warned` in chat.
 - `/warn` sends the user a DM with their warning count.
 - At 3 warnings, the bot kicks the member.
 - `/kick` and `/ban` try to DM the user before removing them.
 - `/ban`, `/kick`, `/warn`, `/clearwarnings`, and `/say` send an entry to your mod log channel.
+- `/unban` unbans a user by Discord user ID.
+- `/purge` deletes recent messages from the current channel.
+- `/bans` shows the current ban list.
 
 ## Modmail
 
 - When someone DMs the bot, it creates a private modmail channel.
+- User images and files sent to the bot are forwarded into the modmail channel.
 - The `Department Administration` role can see and reply in modmail channels.
-- Staff use `/reply message` in the modmail channel to DM the user.
+- Staff use `/reply message attachment` in the modmail channel to DM the user.
 - `/closemodmail reason` closes and deletes the current modmail channel.
+- `/reopenmodmail user` reconnects an existing modmail channel if hosting restarts lost its memory.
 - Set `MODMAIL_CATEGORY_ID` to the category where modmail channels should appear.
 - Set `MODMAIL_LOG_CHANNEL_ID` if you want modmail open/close logs.
 - Enable Message Content Intent in the Discord Developer Portal.
