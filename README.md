@@ -103,7 +103,9 @@ Make sure the bot's role is above the roles it needs to moderate.
 
 ## Training Announcements
 
-- `/training type: Basic Training` posts the basic academy training message.
+- `/training type: SMC Training` posts the SMC academy training message and pings Trainee.
+- `/training type: Constable Second Class Training` posts the constable second class training message and pings Special Municipal Constable.
+- `/training type: Constable First Class Training` posts the constable first class training message and pings Constable 2nd Class.
 - `/training type: Sergeant Training` posts the sergeant academy training message.
 - Training announcements are sent to `TRAINING_ANNOUNCEMENTS_CHANNEL_ID`.
 - The bot looks for server roles by name and mentions them in the announcement.
