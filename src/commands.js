@@ -325,6 +325,155 @@ export const commands = [
   },
   {
     data: new SlashCommandBuilder()
+      .setName("unban")
+      .setDescription("Unban a user from the server.")
+      .addStringOption((option) =>
+        option
+          .setName("user_id")
+          .setDescription("The Discord user ID to unban.")
+          .setRequired(true)
+          .setMinLength(17)
+          .setMaxLength(20)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("reason")
+          .setDescription("Why this user is being unbanned.")
+          .setRequired(true)
+          .setMaxLength(512)
+      ),
+    async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
+      const userId = interaction.options.getString("user_id", true);
+      const reason = interaction.options.getString("reason", true);
+
+      if (!/^\d{17,20}$/.test(userId)) {
+        await replyEphemeral(interaction, "Please provide a valid Discord user ID.");
+        return;
+      }
+
+      const ban = await interaction.guild.bans.fetch(userId).catch(() => null);
+
+      if (!ban) {
+        await replyEphemeral(interaction, "That user is not currently banned.");
+        return;
+      }
+
+      await interaction.guild.members.unban(
+        userId,
+        `${reason} | Unbanned by ${interaction.user.tag}`
+      );
+
+      await sendModLog(
+        interaction,
+        `Unban: ${ban.user.tag} (${ban.user.id}) was unbanned by ${interaction.user.tag}. Reason: ${reason}`
+      );
+      await interaction.reply(`${ban.user.tag} has been unbanned. Reason: ${reason}`);
+    }
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("purge")
+      .setDescription("Delete recent messages from this channel.")
+      .addIntegerOption((option) =>
+        option
+          .setName("amount")
+          .setDescription("How many recent messages to delete.")
+          .setRequired(true)
+          .setMinValue(1)
+          .setMaxValue(100)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("reason")
+          .setDescription("Why these messages are being deleted.")
+          .setMaxLength(512)
+      ),
+    async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
+      const amount = interaction.options.getInteger("amount", true);
+      const reason = interaction.options.getString("reason") ?? "No reason provided.";
+
+      if (!interaction.channel?.isTextBased() || !interaction.channel.bulkDelete) {
+        await replyEphemeral(interaction, "I can only purge messages in a server text channel.");
+        return;
+      }
+
+      await interaction.deferReply({ ephemeral: true });
+
+      const deleted = await interaction.channel.bulkDelete(amount, true).catch((error) => {
+        console.error("Could not purge messages:", error);
+        return null;
+      });
+
+      if (!deleted) {
+        await interaction.editReply("I could not delete those messages. Check my Manage Messages permission.");
+        return;
+      }
+
+      await sendModLog(
+        interaction,
+        `Purge: ${interaction.user.tag} deleted ${deleted.size} message(s) in ${interaction.channel}. Reason: ${reason}`
+      );
+      await interaction.editReply(`Deleted ${deleted.size} message(s).`);
+    }
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("bans")
+      .setDescription("View the current banned users.")
+      .addIntegerOption((option) =>
+        option
+          .setName("page")
+          .setDescription("Which page of bans to show.")
+          .setMinValue(1)
+      ),
+    async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
+      await interaction.deferReply({ ephemeral: true });
+
+      const page = interaction.options.getInteger("page") ?? 1;
+      const bans = await interaction.guild.bans.fetch().catch((error) => {
+        console.error("Could not fetch bans:", error);
+        return null;
+      });
+
+      if (!bans) {
+        await interaction.editReply("I could not fetch the ban list. Check my Ban Members permission.");
+        return;
+      }
+
+      if (bans.size === 0) {
+        await interaction.editReply("There are currently no banned users.");
+        return;
+      }
+
+      const pageSize = 10;
+      const banList = [...bans.values()];
+      const totalPages = Math.ceil(banList.length / pageSize);
+      const currentPage = Math.min(page, totalPages);
+      const pageItems = banList.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+      const lines = pageItems.map((ban, index) => {
+        const number = (currentPage - 1) * pageSize + index + 1;
+        return `${number}. ${ban.user.tag} (${ban.user.id}) - ${ban.reason ?? "No reason provided."}`;
+      });
+
+      await interaction.editReply(
+        `Banned users (${currentPage}/${totalPages}):\n${lines.join("\n")}`
+      );
+    }
+  },
+  {
+    data: new SlashCommandBuilder()
       .setName("warn")
       .setDescription("Warn a member and save it locally.")
       .addUserOption((option) =>
