@@ -1,6 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  createInterviewReviewChannel,
+  getApplicationAnswer
+} from "./applications.js";
 import { handleModmailDm } from "./modmail.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -87,7 +91,7 @@ async function handleApplicationDm(message, routes, userRoute) {
   }
 
   if (userRoute.application.step === "roblox_username") {
-    userRoute.application.answers.robloxUsername = message.content.trim();
+    userRoute.application.answers.robloxUsername = getApplicationAnswer(message);
     userRoute.application.step = "discord_username";
     await writeDmRoutes(routes);
     await message.author.send(
@@ -97,7 +101,7 @@ async function handleApplicationDm(message, routes, userRoute) {
   }
 
   if (userRoute.application.step === "discord_username") {
-    userRoute.application.answers.discordUsername = message.content.trim();
+    userRoute.application.answers.discordUsername = getApplicationAnswer(message);
     userRoute.application.step = "discord_2fa_proof";
     await writeDmRoutes(routes);
     await message.author.send(
@@ -107,7 +111,7 @@ async function handleApplicationDm(message, routes, userRoute) {
   }
 
   if (userRoute.application.step === "discord_2fa_proof") {
-    userRoute.application.answers.discord2faProof = message.content.trim();
+    userRoute.application.answers.discord2faProof = getApplicationAnswer(message);
     userRoute.application.step = "roblox_2fa_proof";
     await writeDmRoutes(routes);
     await message.author.send(
@@ -117,12 +121,13 @@ async function handleApplicationDm(message, routes, userRoute) {
   }
 
   if (userRoute.application.step === "roblox_2fa_proof") {
-    userRoute.application.answers.roblox2faProof = message.content.trim();
+    userRoute.application.answers.roblox2faProof = getApplicationAnswer(message);
     userRoute.application.step = "part_one_complete";
     userRoute.application.completedPartOneAt = new Date().toISOString();
     await writeDmRoutes(routes);
+    const reviewChannel = await createInterviewReviewChannel(message, userRoute.application);
     await message.author.send(
-      "**Part One Complete**\n\nThank you. Your Roblox and Discord usernames have been recorded.\n\nStaff will provide the next part of the interview when it is ready."
+      `**Part One Complete**\n\nThank you. Your interview responses have been submitted for staff review.${reviewChannel ? "" : "\n\nStaff may need to review the submission manually if a review channel was not created."}`
     );
     return;
   }
