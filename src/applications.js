@@ -83,17 +83,12 @@ function createInterviewEmbed(user, application) {
         inline: false
       },
       {
-        name: "Q5. Sergeant+ Rank Proof",
-        value: formatAnswer(answers.sergeantRankProof),
-        inline: false
-      },
-      {
         name: "Section Two: Resume and Experience",
         value: "Worth **25 points**.",
         inline: false
       },
       {
-        name: "Q6. Resume, Cover Letter, and Experience",
+        name: "Q5. Resume, Cover Letter, and Experience",
         value: formatAnswer(answers.resumeAndExperience),
         inline: false
       }
