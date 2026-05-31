@@ -105,7 +105,7 @@ async function handleApplicationDm(message, routes, userRoute) {
     userRoute.application.step = "discord_2fa_proof";
     await writeDmRoutes(routes);
     await message.author.send(
-      "**Part One: General Information**\n\n**Question 3**\nPlease provide proof that Discord two-factor authentication is enabled on your account. A screenshot or link is fine."
+      "**Part One: General Information**\n\n**Question 3**\nPlease provide proof that Discord two-factor authentication is enabled on your account. Please provide a link only."
     );
     return;
   }
@@ -115,7 +115,7 @@ async function handleApplicationDm(message, routes, userRoute) {
     userRoute.application.step = "roblox_2fa_proof";
     await writeDmRoutes(routes);
     await message.author.send(
-      "**Part One: General Information**\n\n**Question 4**\nPlease provide proof that Roblox two-factor authentication is enabled on your account. A screenshot or link is fine."
+      "**Part One: General Information**\n\n**Question 4**\nPlease provide proof that Roblox two-factor authentication is enabled on your account. Please provide a link only."
     );
     return;
   }
@@ -125,7 +125,7 @@ async function handleApplicationDm(message, routes, userRoute) {
     userRoute.application.step = "sergeant_rank_proof";
     await writeDmRoutes(routes);
     await message.author.send(
-      "**Part One: General Information**\n\n**Question 5**\nPlease provide proof that you currently hold the rank of Sergeant or above. Attach proof of rank as a screenshot or link."
+      "**Part One: General Information**\n\n**Question 5**\nPlease provide proof that you currently hold the rank of Sergeant or above. Please provide a link only."
     );
     return;
   }
