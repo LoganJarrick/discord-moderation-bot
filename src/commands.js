@@ -2,6 +2,7 @@ import {
   ChannelType,
   SlashCommandBuilder
 } from "discord.js";
+import { gradeInterview } from "./applications.js";
 import {
   closeModmailThread,
   reopenModmailThread,
@@ -792,6 +793,48 @@ export const commands = [
         `Training: ${interaction.user.tag} posted ${template.name} in ${channel}.`
       );
       await replyEphemeral(interaction, `${template.name} announcement sent.`);
+    }
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("gradeinterview")
+      .setDescription("Grade the interview connected to this channel.")
+      .addStringOption((option) =>
+        option
+          .setName("result")
+          .setDescription("Whether the applicant passed or failed.")
+          .setRequired(true)
+          .addChoices(
+            { name: "Pass", value: "pass" },
+            { name: "Fail", value: "fail" }
+          )
+      )
+      .addStringOption((option) =>
+        option
+          .setName("notes")
+          .setDescription("Notes to send to the applicant.")
+          .setRequired(true)
+          .setMaxLength(1000)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("score")
+          .setDescription("Optional score, such as 18/20.")
+          .setMaxLength(100)
+      ),
+    async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
+      const result = interaction.options.getString("result", true);
+      const notes = interaction.options.getString("notes", true);
+      const score = interaction.options.getString("score");
+      const grade = await gradeInterview(interaction, result, notes, score);
+
+      if (!grade.graded) {
+        await replyEphemeral(interaction, grade.message);
+      }
     }
   }
 ];
