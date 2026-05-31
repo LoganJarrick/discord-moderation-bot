@@ -98,6 +98,26 @@ async function handleApplicationDm(message, routes, userRoute) {
 
   if (userRoute.application.step === "discord_username") {
     userRoute.application.answers.discordUsername = message.content.trim();
+    userRoute.application.step = "discord_2fa_proof";
+    await writeDmRoutes(routes);
+    await message.author.send(
+      "**Part One: General Information**\n\n**Question 3**\nPlease provide proof that Discord two-factor authentication is enabled on your account. A screenshot or link is fine."
+    );
+    return;
+  }
+
+  if (userRoute.application.step === "discord_2fa_proof") {
+    userRoute.application.answers.discord2faProof = message.content.trim();
+    userRoute.application.step = "roblox_2fa_proof";
+    await writeDmRoutes(routes);
+    await message.author.send(
+      "**Part One: General Information**\n\n**Question 4**\nPlease provide proof that Roblox two-factor authentication is enabled on your account. A screenshot or link is fine."
+    );
+    return;
+  }
+
+  if (userRoute.application.step === "roblox_2fa_proof") {
+    userRoute.application.answers.roblox2faProof = message.content.trim();
     userRoute.application.step = "part_one_complete";
     userRoute.application.completedPartOneAt = new Date().toISOString();
     await writeDmRoutes(routes);
