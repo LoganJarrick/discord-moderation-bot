@@ -1,0 +1,179 @@
+import {
+  ChannelType,
+  EmbedBuilder,
+  PermissionFlagsBits
+} from "discord.js";
+
+const defaultInterviewCategoryId = "1510490953540964492";
+const interviewCategoryId =
+  process.env.APPLICATION_INTERVIEW_CATEGORY_ID ?? defaultInterviewCategoryId;
+const departmentAdminRoleName = process.env.MODMAIL_STAFF_ROLE_NAME ?? "Department Administration";
+
+function cleanChannelName(username) {
+  return username
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
+}
+
+function formatAnswer(answer) {
+  if (!answer) {
+    return "No answer provided.";
+  }
+
+  if (typeof answer === "string") {
+    return answer || "No answer provided.";
+  }
+
+  const parts = [];
+
+  if (answer.text) {
+    parts.push(answer.text);
+  }
+
+  if (answer.attachments?.length) {
+    parts.push(answer.attachments.map((item) => `[${item.name}](${item.url})`).join("\n"));
+  }
+
+  return parts.join("\n") || "No answer provided.";
+}
+
+function createInterviewEmbed(user, application) {
+  const answers = application.answers ?? {};
+
+  return new EmbedBuilder()
+    .setTitle("Inspector Interview Submission")
+    .setDescription(`Applicant: ${user} (${user.id})`)
+    .setColor(0x1f6feb)
+    .addFields(
+      {
+        name: "Roblox Username",
+        value: formatAnswer(answers.robloxUsername),
+        inline: false
+      },
+      {
+        name: "Discord Username",
+        value: formatAnswer(answers.discordUsername),
+        inline: false
+      },
+      {
+        name: "Discord 2FA Proof",
+        value: formatAnswer(answers.discord2faProof),
+        inline: false
+      },
+      {
+        name: "Roblox 2FA Proof",
+        value: formatAnswer(answers.roblox2faProof),
+        inline: false
+      }
+    )
+    .setTimestamp(new Date());
+}
+
+export function getApplicationAnswer(message) {
+  const attachments = message.attachments.map((attachment) => ({
+    name: attachment.name ?? "Attachment",
+    url: attachment.url
+  }));
+
+  if (attachments.length === 0) {
+    return message.content.trim();
+  }
+
+  return {
+    text: message.content.trim(),
+    attachments
+  };
+}
+
+export async function createInterviewReviewChannel(message, application) {
+  const guild = await message.client.guilds.fetch(process.env.DISCORD_GUILD_ID).catch(() => null);
+
+  if (!guild) {
+    await message.author.send("Your interview was completed, but I could not find the server review area.");
+    return null;
+  }
+
+  await guild.members.fetchMe();
+  await guild.roles.fetch();
+
+  const staffRole = guild.roles.cache.find((role) => role.name === departmentAdminRoleName);
+
+  if (!staffRole) {
+    await message.author.send("Your interview was completed, but I could not find the review staff role.");
+    return null;
+  }
+
+  const channel = await guild.channels.create({
+    name: `interview-${cleanChannelName(message.author.username) || message.author.id}`,
+    type: ChannelType.GuildText,
+    topic: `application-user:${message.author.id}`,
+    parent: interviewCategoryId,
+    permissionOverwrites: [
+      {
+        id: guild.roles.everyone.id,
+        deny: [PermissionFlagsBits.ViewChannel]
+      },
+      {
+        id: staffRole.id,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory
+        ]
+      },
+      {
+        id: guild.members.me.id,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ManageChannels,
+          PermissionFlagsBits.ReadMessageHistory
+        ]
+      }
+    ]
+  });
+
+  await channel.send({
+    content: `New Inspector Interview submission from ${message.author.tag} (${message.author.id}). Use /gradeinterview in this channel to send the applicant a result.`,
+    embeds: [createInterviewEmbed(message.author, application)]
+  });
+
+  return channel;
+}
+
+export async function gradeInterview(interaction, result, notes, score) {
+  const userId = interaction.channel?.topic?.match(/application-user:(\d+)/)?.[1];
+
+  if (!userId) {
+    return {
+      graded: false,
+      message: "This channel is not connected to an interview applicant."
+    };
+  }
+
+  const user = await interaction.client.users.fetch(userId).catch(() => null);
+
+  if (!user) {
+    return {
+      graded: false,
+      message: "I could not find the applicant for this interview channel."
+    };
+  }
+
+  const title = result === "pass" ? "Inspector Interview Passed" : "Inspector Interview Failed";
+  const scoreLine = score ? `\nScore: ${score}` : "";
+  const notesLine = notes ? `\nNotes: ${notes}` : "";
+
+  await user.send(
+    `**${title}**${scoreLine}${notesLine}\n\nThank you for completing the interview process.`
+  );
+
+  await interaction.reply(
+    `Interview marked as **${result.toUpperCase()}** for ${user}.${scoreLine}${notesLine}`
+  );
+
+  return { graded: true };
+}
