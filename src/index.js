@@ -9,7 +9,7 @@ import {
   Routes
 } from "discord.js";
 import { commands } from "./commands.js";
-import { handleModmailDm } from "./modmail.js";
+import { handleRoutedDm } from "./dm-router.js";
 
 const commandMap = new Map(commands.map((command) => [command.data.name, command]));
 
@@ -93,7 +93,7 @@ client.on(Events.MessageCreate, async (message) => {
   }
 
   if (message.channel.type === ChannelType.DM) {
-    await handleModmailDm(message);
+    await handleRoutedDm(message);
     return;
   }
 });
@@ -104,4 +104,3 @@ if (!process.env.DISCORD_TOKEN) {
 
 await registerSlashCommands();
 await client.login(process.env.DISCORD_TOKEN);
-
