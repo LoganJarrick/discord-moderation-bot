@@ -122,16 +122,6 @@ async function handleApplicationDm(message, routes, userRoute) {
 
   if (userRoute.application.step === "roblox_2fa_proof") {
     userRoute.application.answers.roblox2faProof = getApplicationAnswer(message);
-    userRoute.application.step = "sergeant_rank_proof";
-    await writeDmRoutes(routes);
-    await message.author.send(
-      "**Part One: General Information**\n\n**Question 5**\nPlease provide proof that you currently hold the rank of Sergeant or above. Please provide a link only."
-    );
-    return;
-  }
-
-  if (userRoute.application.step === "sergeant_rank_proof") {
-    userRoute.application.answers.sergeantRankProof = getApplicationAnswer(message);
     userRoute.application.step = "awaiting_section_two_ready";
     await writeDmRoutes(routes);
     await message.author.send(
