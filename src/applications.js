@@ -167,7 +167,6 @@ export async function createInterviewReviewChannel(message, application) {
   });
 
   await channel.send({
-    content: `New Inspector Interview submission from ${message.author}.`,
     embeds: [createInterviewEmbed(message.author, application)]
   });
 
