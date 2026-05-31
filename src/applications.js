@@ -44,41 +44,61 @@ function createInterviewEmbed(user, application) {
   const answers = application.answers ?? {};
 
   return new EmbedBuilder()
-    .setTitle("Inspector Interview Submission")
-    .setDescription(`Applicant: ${user} (${user.id})`)
-    .setColor(0x1f6feb)
+    .setAuthor({
+      name: `${user.tag} submitted an Inspector Interview`,
+      iconURL: user.displayAvatarURL()
+    })
+    .setTitle("Inspector Interview Review")
+    .setDescription("Review the applicant's responses below, then use `/gradeinterview` to send a pass or fail result.")
+    .setColor(0x2f80ed)
     .addFields(
       {
-        name: "Roblox Username",
+        name: "Applicant",
+        value: `${user}\nUser ID: \`${user.id}\``,
+        inline: false
+      },
+      {
+        name: "Part One: General Information",
+        value: "Identity, account security, and rank verification.",
+        inline: false
+      },
+      {
+        name: "Q1. Roblox Username",
         value: formatAnswer(answers.robloxUsername),
-        inline: false
+        inline: true
       },
       {
-        name: "Discord Username",
+        name: "Q2. Discord Username",
         value: formatAnswer(answers.discordUsername),
-        inline: false
+        inline: true
       },
       {
-        name: "Discord 2FA Proof",
+        name: "Q3. Discord 2FA Proof",
         value: formatAnswer(answers.discord2faProof),
         inline: false
       },
       {
-        name: "Roblox 2FA Proof",
+        name: "Q4. Roblox 2FA Proof",
         value: formatAnswer(answers.roblox2faProof),
         inline: false
       },
       {
-        name: "Proof of Sergeant+",
+        name: "Q5. Sergeant+ Rank Proof",
         value: formatAnswer(answers.sergeantRankProof),
         inline: false
       },
       {
-        name: "Resume and Experience (25 Points)",
+        name: "Section Two: Resume and Experience",
+        value: "Worth **25 points**.",
+        inline: false
+      },
+      {
+        name: "Q6. Resume, Cover Letter, and Experience",
         value: formatAnswer(answers.resumeAndExperience),
         inline: false
       }
     )
+    .setFooter({ text: "Use /gradeinterview in this channel when review is complete." })
     .setTimestamp(new Date());
 }
 
@@ -147,7 +167,7 @@ export async function createInterviewReviewChannel(message, application) {
   });
 
   await channel.send({
-    content: `New Inspector Interview submission from ${message.author.tag} (${message.author.id}). Use /gradeinterview in this channel to send the applicant a result.`,
+    content: `New Inspector Interview submission from ${message.author}.`,
     embeds: [createInterviewEmbed(message.author, application)]
   });
 
