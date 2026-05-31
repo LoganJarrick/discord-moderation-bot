@@ -67,6 +67,16 @@ function createInterviewEmbed(user, application) {
         name: "Roblox 2FA Proof",
         value: formatAnswer(answers.roblox2faProof),
         inline: false
+      },
+      {
+        name: "Proof of Sergeant+",
+        value: formatAnswer(answers.sergeantRankProof),
+        inline: false
+      },
+      {
+        name: "Resume and Experience (25 Points)",
+        value: formatAnswer(answers.resumeAndExperience),
+        inline: false
       }
     )
     .setTimestamp(new Date());
@@ -166,9 +176,13 @@ export async function gradeInterview(interaction, result, notes, score) {
   const title = result === "pass" ? "Inspector Interview Passed" : "Inspector Interview Failed";
   const scoreLine = score ? `\nScore: ${score}` : "";
   const notesLine = notes ? `\nNotes: ${notes}` : "";
+  const resultMessage =
+    result === "pass"
+      ? "Congratulations, you have passed the interview! Department Administration will contact you with more information shortly. If you have any questions, DM me via modmail."
+      : "Unfortunately, you have failed. There is always next time. Thank you for trying.";
 
   await user.send(
-    `**${title}**${scoreLine}${notesLine}\n\nThank you for completing the interview process.`
+    `**${title}**${scoreLine}${notesLine}\n\nThank you for completing the interview process.\n\n${resultMessage}`
   );
 
   await interaction.reply(
@@ -176,4 +190,24 @@ export async function gradeInterview(interaction, result, notes, score) {
   );
 
   return { graded: true };
+}
+
+export async function closeInterviewChannel(interaction, reason) {
+  const userId = interaction.channel?.topic?.match(/application-user:(\d+)/)?.[1];
+
+  if (!userId) {
+    return {
+      closed: false,
+      message: "This channel is not connected to an interview applicant."
+    };
+  }
+
+  await interaction.reply("Interview channel closed. This channel will be deleted in 5 seconds.");
+  setTimeout(() => {
+    interaction.channel
+      .delete(`Interview closed by ${interaction.user.tag}: ${reason}`)
+      .catch(() => {});
+  }, 5000);
+
+  return { closed: true };
 }
