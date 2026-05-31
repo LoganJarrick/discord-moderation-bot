@@ -2,7 +2,10 @@ import {
   ChannelType,
   SlashCommandBuilder
 } from "discord.js";
-import { gradeInterview } from "./applications.js";
+import {
+  closeInterviewChannel,
+  gradeInterview
+} from "./applications.js";
 import {
   closeModmailThread,
   reopenModmailThread,
@@ -834,6 +837,30 @@ export const commands = [
 
       if (!grade.graded) {
         await replyEphemeral(interaction, grade.message);
+      }
+    }
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("closeinterview")
+      .setDescription("Close the current interview review channel.")
+      .addStringOption((option) =>
+        option
+          .setName("reason")
+          .setDescription("Why this interview channel is being closed.")
+          .setRequired(true)
+          .setMaxLength(512)
+      ),
+    async execute(interaction) {
+      if (!(await requireDepartmentAdmin(interaction))) {
+        return;
+      }
+
+      const reason = interaction.options.getString("reason", true);
+      const result = await closeInterviewChannel(interaction, reason);
+
+      if (!result.closed) {
+        await replyEphemeral(interaction, result.message);
       }
     }
   }
