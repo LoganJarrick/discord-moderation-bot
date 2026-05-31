@@ -122,12 +122,49 @@ async function handleApplicationDm(message, routes, userRoute) {
 
   if (userRoute.application.step === "roblox_2fa_proof") {
     userRoute.application.answers.roblox2faProof = getApplicationAnswer(message);
-    userRoute.application.step = "part_one_complete";
-    userRoute.application.completedPartOneAt = new Date().toISOString();
+    userRoute.application.step = "sergeant_rank_proof";
+    await writeDmRoutes(routes);
+    await message.author.send(
+      "**Part One: General Information**\n\n**Question 5**\nPlease provide proof that you currently hold the rank of Sergeant or above. Attach proof of rank as a screenshot or link."
+    );
+    return;
+  }
+
+  if (userRoute.application.step === "sergeant_rank_proof") {
+    userRoute.application.answers.sergeantRankProof = getApplicationAnswer(message);
+    userRoute.application.step = "awaiting_section_two_ready";
+    await writeDmRoutes(routes);
+    await message.author.send(
+      "**Part One Complete**\n\nThank you. Your general information has been recorded.\n\nAre you ready to move on to **Section Two: Resume and Experience**?\n\nReply `yes` when you are ready."
+    );
+    return;
+  }
+
+  if (userRoute.application.step === "awaiting_section_two_ready") {
+    if (!isReady(message.content)) {
+      await message.author.send(
+        "**Section Two: Resume and Experience**\n\nNo problem. When you are ready to continue, reply `yes`."
+      );
+      await writeDmRoutes(routes);
+      return;
+    }
+
+    userRoute.application.step = "resume";
+    await writeDmRoutes(routes);
+    await message.author.send(
+      "**Section Two: Resume and Experience**\n\nThis section is worth **25 points**.\n\nWe would like to learn more about you, your background, and any relevant experience you may have.\n\nPlease attach your resume and cover letter, or provide a Google Document link. If you do not have a formal resume or cover letter, you may type your response here instead.\n\nYour response should include a brief overview of who you are, your experience, and why you are interested in this position."
+    );
+    return;
+  }
+
+  if (userRoute.application.step === "resume") {
+    userRoute.application.answers.resumeAndExperience = getApplicationAnswer(message);
+    userRoute.application.step = "submitted";
+    userRoute.application.submittedAt = new Date().toISOString();
     await writeDmRoutes(routes);
     const reviewChannel = await createInterviewReviewChannel(message, userRoute.application);
     await message.author.send(
-      `**Part One Complete**\n\nThank you. Your interview responses have been submitted for staff review.${reviewChannel ? "" : "\n\nStaff may need to review the submission manually if a review channel was not created."}`
+      `**Interview Submitted**\n\nThank you. Your interview responses have been submitted for staff review.${reviewChannel ? "" : "\n\nStaff may need to review the submission manually if a review channel was not created."}`
     );
     return;
   }
