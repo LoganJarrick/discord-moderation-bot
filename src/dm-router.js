@@ -62,7 +62,7 @@ function isReady(content) {
 
 async function sendApplicationIntro(message) {
   await message.author.send(
-    "**Inspector Interview**\n\nWelcome to the Inspector Interview process. This interview will be completed through direct messages with the bot.\n\nPlease answer each question clearly and honestly. Your responses may be reviewed by department staff.\n\nPlease use full grammar and remain professional throughout this interview.\n\nAre you ready to move on to **Part One**?\n\nReply `yes` when you are ready."
+    "**Inspector Interview**\n\nWelcome to the Inspector Interview process. This interview will be completed through direct messages with the bot.\n\nYou must be a Sergeant or above to take this test.\n\nPlease answer each question clearly and honestly. Your responses may be reviewed by department staff.\n\nPlease use full grammar and remain professional throughout this interview.\n\nAre you ready to move on to **Part One**?\n\nReply `yes` when you are ready."
   );
 }
 
